@@ -40,6 +40,8 @@ ECG:
 - [CSN](https://physionet.org/content/ecg-arrhythmia/1.0.0/)
 - [G12E](https://physionet.org/content/challenge-2020/1.0.2/training/georgia/)
 
+**Please download the splits of MIMIC-IV-ECG from [this link](https://drive.google.com/drive/folders/1RsLRFGoDwakC8smhUmVoBSkjq46To7vI?usp=sharing)**
+
 ## Walkthrough of MELP
 
 ## Pretraining Stage
