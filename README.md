@@ -10,6 +10,7 @@
 ![](docs/framework.png)
 
 ## Updates
+- 23/10/2026: Zero-shot weights (ECG and text towers) from a reproduction run are on Hugging Face: [xjc1022/MELP-repro](https://huggingface.co/xjc1022/MELP-repro). See [Pretrained weights](#pretrained-weights).
 - 29/05/2025: The first version of MELP code base is now alive.
 
 ## Installation 
@@ -19,6 +20,52 @@ conda create -n melp python=3.10
 conda activate melp
 pip install -r requirements.txt
 pip install -e .
+```
+
+## Pretrained weights
+
+| Hugging Face repo | contains | use for |
+|---|---|---|
+| [fuyingw/MELP_Encoder](https://huggingface.co/fuyingw/MELP_Encoder) | ECG tower | feature extraction, linear probing |
+| [xjc1022/MELP-Encoder-repro](https://huggingface.co/xjc1022/MELP-Encoder-repro) | ECG tower, reproduction run | feature extraction, linear probing |
+| [xjc1022/MELP-repro](https://huggingface.co/xjc1022/MELP-repro) | ECG and text towers, same reproduction run | zero-shot classification |
+
+The encoder repos hold the ECG tower only, so they cannot score an ECG against a class
+description by themselves. `xjc1022/MELP-repro` adds the text tower and its projection.
+It was retrained with this code base (text tower `fuyingw/heart_bert`, raw wfdb waveforms,
+lr 1e-4 with a 2-epoch warmup; full settings on the model card) and is not the checkpoint
+behind the paper's tables. Zero-shot AUROC on the test splits:
+
+| | PTB-XL Rhythm | PTB-XL Form | PTB-XL Sub | PTB-XL Super | CPSC2018 | CSN | Average |
+|---|---|---|---|---|---|---|---|
+| xjc1022/MELP-repro | 86.43 | 70.32 | 77.65 | 77.21 | 84.19 | 74.59 | 78.40 |
+| Paper (Table 3) | 85.4 | 69.1 | 81.2 | 76.2 | 84.2 | 77.6 | 79.0 |
+
+```python
+import json, torch
+from huggingface_hub import hf_hub_download
+from transformers import AutoModel, AutoTokenizer
+
+repo = "xjc1022/MELP-repro"
+model = AutoModel.from_pretrained(repo, trust_remote_code=True).eval()
+tokenizer = AutoTokenizer.from_pretrained(repo, trust_remote_code=True)
+
+prompts = json.load(open(hf_hub_download(repo, "prompts/CKEPE_prompt.json")))
+weights = model.zeroshot_weights(tokenizer, [prompts[c] for c in ["SR", "AFIB", "STACH"]])
+
+ecg = torch.rand(2, 12, 5000)  # 12 leads (I, II, III, aVR, aVF, aVL, V1-V6), 500 Hz, min-max scaled to [0, 1]
+with torch.no_grad():
+    scores = model.encode_ecg(ecg) @ weights  # (2, 3) cosine similarities
+```
+
+The model card has the input format and the text tokenisation details. To export a
+checkpoint you trained yourself in the same format:
+
+```
+cd scripts/hf
+python export_melp.py CKPT_PATH OUT_DIR           # Lightning checkpoint -> HF folder
+python test_equivalence.py CKPT_PATH OUT_DIR      # the export reproduces the checkpoint's embeddings
+python eval_zeroshot_hf.py OUT_DIR                # six-dataset zero-shot from the HF folder alone
 ```
 
 ## Dataset Preparation
@@ -91,7 +138,8 @@ CUDA_VISIBLE_DEVICES=0 python main_finetune.py \
 ### Zero-shot Classification
 ```
 cd scripts/zeroshot
-python test_zeroshot.py
+python test_zeroshot.py --model_name melp --ckpt_path CKPT_PATH    # a Lightning checkpoint
+python ../hf/eval_zeroshot_hf.py xjc1022/MELP-repro                 # the released weights
 ```
 
 ## Acknowledgements
