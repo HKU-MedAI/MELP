@@ -22,6 +22,7 @@ from melp.paths import RAW_DATA_PATH
 SETS = ["ptbxl_rhythm", "ptbxl_form", "ptbxl_sub_class", "ptbxl_super_class", "icbeb", "chapman"]
 PAPER = {"ptbxl_rhythm": 85.4, "ptbxl_form": 69.1, "ptbxl_sub_class": 81.2,
          "ptbxl_super_class": 76.2, "icbeb": 84.2, "chapman": 77.6}  # Table 3
+PAPER_AVERAGE = 79.0  # as reported; the mean of the rounded entries above is 78.95
 
 
 def main(repo):
@@ -50,7 +51,7 @@ def main(repo):
               f"(paper {PAPER[name]:.1f})  [{time.time() - t0:.0f}s]", flush=True)
 
     print(f"{'AVERAGE':18s} AUROC {np.mean(list(scores.values())):6.2f}  "
-          f"(paper {np.mean(list(PAPER.values())):.1f})")
+          f"(paper {PAPER_AVERAGE:.1f})")
 
 
 if __name__ == "__main__":
