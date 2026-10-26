@@ -28,9 +28,11 @@ torch.set_float32_matmul_precision('high')
 
 '''
 CUDA_VISIBLE_DEVICES=0,1,2,3 python main_pretrain.py --num_devices 4 --train_data_pct 1 \
+    --run_name melp_repro --model_name melp \
     --text_encoder_name fuyingw/heart_bert \
-    --lr 2e-4 --model_name melp --batch_size 64 --max_epochs 100 \
-    --ecg_encoder_name ecgfm \
+    --ecg_encoder_name ecgfm --ecg_encoder_weight "$MELP_ECGFM_PATH" \
+    --lr 1e-4 --warmup_epochs 2 --batch_size 64 --max_epochs 100 \
+    --early_stopping_patience 12 --val_check_interval 0.25 \
     --clip_loss_weight 1.0 --caption_loss_weight 2.0 --local_loss_weight 0.2
 '''
 
