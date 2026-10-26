@@ -125,9 +125,10 @@ denoised store trains and evaluates on different distributions; on one config th
 moves the waveform enough to matter: whole-record correlation 0.855, lowest in V2-V4 at
 0.75, which is where the form and sub-class tasks read.
 
-**`--warmup_epochs`** must be non-zero. The learning-rate schedule ramps in over this many
-epochs; without a ramp both towers collapse within ~25 steps, the contrastive loss sits at
-`ln(batch)` forever, and every zero-shot AUROC comes out at exactly 0.5.
+**`--warmup_epochs`** must be non-zero with `fuyingw/heart_bert`. The learning-rate
+schedule ramps in over this many epochs; without a ramp both towers collapse within ~25
+steps, the contrastive loss sits at `ln(batch)` forever, and every zero-shot AUROC comes
+out at exactly 0.5.
 
 **`--val_check_interval`** controls how often validation runs, as a fraction of an epoch.
 Validating only at epoch boundaries hides the peak: on one run the best checkpoint scored
@@ -138,10 +139,17 @@ far peaked at epoch 4, so `--early_stopping_patience` needs enough room to get t
 second-resolution timestamp computed separately in each DDP rank, and two runs started in
 the same second will overwrite each other's logs.
 
-Reference: the command above (text tower `fuyingw/heart_bert`, ECG tower initialised from
-the ECG-FM checkpoint at `MELP_ECGFM_PATH`) reaches a six-dataset zero-shot
-average of 78.40 on the test splits (paper reports 79.0). The encoder is published at
-[xjc1022/MELP-Encoder-repro](https://huggingface.co/xjc1022/MELP-Encoder-repro).
+Reference: the command above is the run behind
+[xjc1022/MELP-repro](https://huggingface.co/xjc1022/MELP-repro) (ECG and text towers, for
+zero-shot) and [xjc1022/MELP-Encoder-repro](https://huggingface.co/xjc1022/MELP-Encoder-repro)
+(ECG tower only). It reaches a six-dataset zero-shot average of 78.40 on the test splits
+(paper reports 79.0).
+
+`fuyingw/heart_bert` is `ncbi/MedCPT-Query-Encoder` after further training on cardiology
+text (paper Appendix A.2; `scripts/pretrain_lm/pretrain_text_lm.py` reruns that stage).
+`--ecg_encoder_weight` is the ECG-FM (wav2vec2-CMSC) checkpoint that initialises the ECG
+tower; without it the tower starts from random weights. The run above started from the
+authors' `epoch=44-step=131040.ckpt`, which is not published.
 
 ## Smoke test
 
