@@ -29,6 +29,7 @@ pip install -e .
 | [fuyingw/MELP_Encoder](https://huggingface.co/fuyingw/MELP_Encoder) | ECG tower | feature extraction, linear probing |
 | [xjc1022/MELP-Encoder-repro](https://huggingface.co/xjc1022/MELP-Encoder-repro) | ECG tower, reproduction run | feature extraction, linear probing |
 | [xjc1022/MELP-repro](https://huggingface.co/xjc1022/MELP-repro) | ECG and text towers, same reproduction run | zero-shot classification |
+| [xjc1022/MELP-ECG-FM-init](https://huggingface.co/xjc1022/MELP-ECG-FM-init) | ECG-FM checkpoint the reproduction run started from | `--ecg_encoder_weight` in pretraining |
 
 The encoder repos hold the ECG tower only, so they cannot score an ECG against a class
 description by themselves. `xjc1022/MELP-repro` adds the text tower and its projection.
@@ -82,7 +83,8 @@ MELP_RAW_DATA_PATH            # raw datasets, one directory per dataset
 
 MELP_PROCESSED_DATA_PATH      # output of scripts/preprocess/*; defaults next to the raw root
 MELP_SPLIT_DIR                # data splits; defaults to the ones shipped under src/melp/data_split
-MELP_ECGFM_PATH               # ECG-FM checkpoint used to initialise the ECG encoder (optional)
+MELP_ECGFM_PATH               # ECG-FM checkpoint used to initialise the ECG encoder (optional);
+                              # xjc1022/MELP-ECG-FM-init, see Pretraining Stage
 ```
 
 The MIMIC-IV-ECG splits are not shipped in this repo — download them (link below) and either
@@ -102,11 +104,12 @@ ECG:
 ## Pretraining Stage
 
 ```
+hf download xjc1022/MELP-ECG-FM-init ecgfm.ckpt --local-dir ckpts   # ECG-FM init, 253 MB
 cd scripts/pretrain
 CUDA_VISIBLE_DEVICES=0,1,2,3 python main_pretrain.py \
     --run_name my_run --num_devices 4 --train_data_pct 1 \
     --model_name melp --ecg_encoder_name ecgfm --ecg_source raw \
-    --ecg_encoder_weight "$MELP_ECGFM_PATH" \
+    --ecg_encoder_weight ../../ckpts/ecgfm.ckpt \
     --text_encoder_name fuyingw/heart_bert \
     --lr 1e-4 --batch_size 64 --max_epochs 100 --warmup_epochs 2 \
     --n_queries_contrast 12 --val_check_interval 0.25 \
@@ -149,7 +152,9 @@ zero-shot) and [xjc1022/MELP-Encoder-repro](https://huggingface.co/xjc1022/MELP-
 text (paper Appendix A.2; `scripts/pretrain_lm/pretrain_text_lm.py` reruns that stage).
 `--ecg_encoder_weight` is the ECG-FM (wav2vec2-CMSC) checkpoint that initialises the ECG
 tower; without it the tower starts from random weights. The run above started from the
-authors' `epoch=44-step=131040.ckpt`, which is not published.
+authors' `epoch=44-step=131040.ckpt`; its weights are at
+[xjc1022/MELP-ECG-FM-init](https://huggingface.co/xjc1022/MELP-ECG-FM-init), and the
+first line of the command downloads them to `ckpts/ecgfm.ckpt` at the repository root.
 
 ## Smoke test
 

@@ -174,6 +174,7 @@ cython_debug/
 .pypirc
 
 logs/
+ckpts/
 mimic-iv-ecg/
 # MIMIC-IV-ECG splits are a separate download; a symlink here is a valid drop-in
 src/melp/data_split/mimic-iv-ecg
